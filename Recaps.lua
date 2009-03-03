@@ -27,12 +27,21 @@ end
 --* Saves the arena match data
 local function saveArena(mapName, teamSize)
 	local team0, team1 = GetBattlefieldTeamInfo(0), GetBattlefieldTeamInfo(1)
-	local matchData = {}
+	--local matchData = {}
+	local green = {
+		team = team0,
+		members = {}
+	}
+
+	local gold = {
+		team = team1,
+		members = {}
+	}
 
 	local numScores = GetNumBattlefieldScores()
 	for i = 1, numScores do
 		local server = GetRealmName()
-		local name, killingBlows, _, deaths, _, faction, _, race, _, classToken, damageDone, healingDone = GetBattlefieldScore(i)
+		local name, killingBlows, _, _, _, faction, _, race, _, classToken, damageDone, healingDone = GetBattlefieldScore(i)
 		if faction then
 			if string.find(name, "%-") then
 				name, server = string.split("-", name)
@@ -40,26 +49,26 @@ local function saveArena(mapName, teamSize)
 			local _, teamRating, newTeamRating = GetBattlefieldTeamInfo(faction)
 			local info = {
 				name = name,
-				server = server,
 				killingBlows = killingBlows,
-				deaths = deaths,
-				honorGained = newTeamRating - teamRating,
 				race = race,
 				classToken = classToken,
 				damageDone = damageDone,
 				healingDone = healingDone,
-				teamRating = teamRating,
-				newTeamRating = newTeamRating
 			}
-			
+
+			local tbl
 			if faction == 0 then
-				info.team = team0
-				info.faction = "Green"
+				tbl = green
 			else
-				info.team = team1
-				info.faction = "Gold"
+				tbl = gold
 			end
-			table.insert(matchData, info)
+
+			tbl.server = server
+			tbl.teamRating = teamRating
+			tbl.newTeamRating = newTeamRating
+			tbl.honorGained = newTeamRating - teamRating
+
+			table.insert(tbl.members, info)
 		end
 	end
 	
@@ -69,7 +78,8 @@ local function saveArena(mapName, teamSize)
 		mapName = mapName,
 		arenaStop = time(),
 		arenaStart = arenastart,
-		matchData = matchData,
+		green = green,
+		gold = gold
 	})
 	LoggingCombat(0);
 end
