@@ -14,7 +14,7 @@ local function print(msg)
 end
 
 --* Get the timezone offset
-local function get_timezone()
+local function timezone()
   local now = time()
   local timezone = difftime(now, time(date("!*t", now)))
   local h, m = math.modf(timezone / 3600)
@@ -64,8 +64,9 @@ local function saveArena(mapName, teamSize)
 	end
 	
 	table.insert(RECAPS_MATCHES, {
-		timeZone = get_timezone(),
-		map_name = mapName,
+		teamSize = teamSize,
+		timeZone = timezone(),
+		mapName = mapName,
 		arenaStop = time(),
 		arenaStart = arenastart,
 		matchData = matchData,
@@ -125,7 +126,7 @@ eventsFrame:SetScript("OnUpdate",
 	end)
 
 --* Matches comment and starring frame
-local viewFrame = CreateFrame("Frame", nil, UIParent)
+local viewFrame = CreateFrame("Frame", "ArenaRecapsWindow", UIParent)
 viewFrame:SetWidth(400)
 viewFrame:SetHeight(300)
 viewFrame:SetBackdrop({	bgFile = "Interface/Tooltips/UI-Tooltip-Background", 
@@ -153,6 +154,8 @@ viewFrame.titleBG:SetTexture(29/255, 189/255, 229/255, 0.5)
 viewFrame.titleBG:SetWidth(376)
 viewFrame.titleBG:SetHeight(22)
 viewFrame.titleBG:SetPoint("TOPRIGHT", -3, -3)
+
+table.insert(UISpecialFrames, "ArenaRecapsWindow")
 
 --* Create the minimap menu icon
 local menuIcon = CreateFrame("Button", "RecapsMinimap", Minimap)
