@@ -1,4 +1,8 @@
---* Recaps WoW AddOn
+----------------------------------
+--* Arena Recaps WoW AddOn
+----------------------------------
+
+--* Global variables
 RECAPS_MATCHES = RECAPS_MATCHES or {}
 
 --* Local variables
@@ -9,10 +13,21 @@ local function print(msg)
 	DEFAULT_CHAT_FRAME:AddMessage(msg)
 end
 
+--* Get the timezone offset
+local function get_timezone()
+  local now = time()
+  local timezone = difftime(now, time(date("!*t", now)))
+  local h, m = math.modf(timezone / 3600)
+  local zoneText = date("%z")
+  zoneText = string.gsub(zoneText, "%s", "")
+  zoneText = string.gsub(zoneText, "%l", "")
+  return string.format("%s %+.4d",zoneText, 100 * h + 60 * m)
+end
+
 --* Saves the arena match data
 local function saveArena(mapName, teamSize)
 	local team0, team1 = GetBattlefieldTeamInfo(0), GetBattlefieldTeamInfo(1)
-	local details = {}
+	local matchData = {}
 
 	local numScores = GetNumBattlefieldScores()
 	for i = 1, numScores do
@@ -43,15 +58,16 @@ local function saveArena(mapName, teamSize)
 				info.team = team1
 				info.faction = "Gold"
 			end
-			table.insert(details, info)
+			table.insert(matchData, info)
 		end
 	end
 	
 	table.insert(RECAPS_MATCHES, {
+		timeZone = get_timezone(),
 		map_name = mapName,
 		arenaStop = time(),
 		arenaStart = arenastart,
-		details = details,
+		matchData = matchData,
 	})
 	LoggingCombat(0);
 end
