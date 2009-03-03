@@ -138,7 +138,7 @@ eventsFrame:SetScript("OnUpdate",
 --* Matches comment and starring frame
 local viewFrame = CreateFrame("Frame", "ArenaRecapsWindow", UIParent)
 viewFrame:SetWidth(400)
-viewFrame:SetHeight(300)
+viewFrame:SetHeight(285)
 viewFrame:SetBackdrop({	bgFile = "Interface/Tooltips/UI-Tooltip-Background", 
 						edgeFile = "Interface/Tooltips/UI-Tooltip-Border", 
 						tile = true, tileSize = 16, edgeSize = 16, 
@@ -165,7 +165,148 @@ viewFrame.titleBG:SetWidth(376)
 viewFrame.titleBG:SetHeight(22)
 viewFrame.titleBG:SetPoint("TOPRIGHT", -3, -3)
 
+viewFrame.matchID = viewFrame:CreateFontString(nil, "ARTWORK")
+viewFrame.matchID:SetWidth(65)
+viewFrame.matchID:SetPoint("TOPLEFT", 5, -30)
+viewFrame.matchID:SetFontObject(GameTooltipTextSmall)
+viewFrame.matchID:SetTextColor(29/255, 189/255, 229/255)
+viewFrame.matchID:SetText("ID")
+
+viewFrame.headerDate = viewFrame:CreateFontString(nil, "ARTWORK")
+viewFrame.headerDate:SetWidth(110)
+viewFrame.headerDate:SetPoint("LEFT", viewFrame.matchID, "RIGHT", 4, 0)
+viewFrame.headerDate:SetFontObject(GameTooltipTextSmall)
+viewFrame.headerDate:SetTextColor(29/255, 189/255, 229/255)
+viewFrame.headerDate:SetText("Date")
+
+viewFrame.headerAgainst = viewFrame:CreateFontString(nil, "ARTWORK")
+viewFrame.headerAgainst:SetWidth(160)
+viewFrame.headerAgainst:SetPoint("LEFT", viewFrame.headerDate, "RIGHT", 4, 0)
+viewFrame.headerAgainst:SetFontObject(GameTooltipTextSmall)
+viewFrame.headerAgainst:SetTextColor(29/255, 189/255, 229/255)
+viewFrame.headerAgainst:SetText("Against")
+
+viewFrame.headerResult = viewFrame:CreateFontString(nil, "ARTWORK")
+viewFrame.headerResult:SetWidth(100)
+viewFrame.headerResult:SetPoint("LEFT", viewFrame.headerAgainst, "RIGHT", 4, 0)
+viewFrame.headerResult:SetFontObject(GameTooltipTextSmall)
+viewFrame.headerResult:SetTextColor(29/255, 189/255, 229/255)
+viewFrame.headerResult:SetText("Result")
+
+viewFrame.scroll = CreateFrame("ScrollFrame", "ArenaRecapsWindowScroll", viewFrame, "FauxScrollFrameTemplate")
+viewFrame.scroll:SetPoint("BOTTOMRIGHT", -25, 4)
+viewFrame.scroll:SetWidth(370)
+viewFrame.scroll:SetHeight(235)
+
+viewFrame.scroll:SetScript("OnVerticalScroll",
+	function(self, val)
+		FauxScrollFrame_OnVerticalScroll(self, val, 14, ArenaRecaps_ScrollMatches)
+	end)
+
+viewFrame.scroll:SetScript("OnShow",
+	function(self)
+		ArenaRecaps_ScrollMatches()
+	end)
+
+viewFrame.scroll:SetScript("OnMouseWheel",
+	function(self, val)
+		ScrollFrameTemplate_OnMouseWheel(self, val)
+	end)
+
+for i = 1, 15 do
+	local frame = CreateFrame("Button", nil, viewFrame)
+	frame:SetWidth(394)
+	frame:SetHeight(16)
+	if i == 1 then
+		frame:SetPoint("TOPLEFT", 4, -44)
+	else
+		frame:SetPoint("TOPLEFT", viewFrame["row"..i-1], "BOTTOMLEFT", 0, 0)
+	end
+
+	frame.match = frame:CreateFontString(nil, "ARTWORK")
+	frame.match:SetWidth(40)
+	frame.match:SetPoint("LEFT")
+	frame.match:SetFontObject(GameTooltipTextSmall)
+
+	frame.star = CreateFrame("CheckButton", nil, frame)
+	frame.star:SetWidth(14)
+	frame.star:SetHeight(14)
+	frame.star:SetPoint("LEFT", frame.match, "RIGHT", 4, 0)
+	frame.star:SetCheckedTexture("Interface\\AddOns\\Recaps\\starred")
+	frame.star:SetDisabledCheckedTexture("Interface\\AddOns\\Recaps\\unstarred")
+
+	frame.star:SetScript("OnClick",
+		function(self)
+			local matchID = self:GetParent().matchID
+			RECAPS_MATCHES[matchID].starred = self:GetChecked()
+		end)
+
+	frame.date = frame:CreateFontString(nil, "ARTWORK")
+	frame.date:SetWidth(110)
+	frame.date:SetPoint("LEFT", frame.star, "RIGHT", 12, 0)
+	frame.date:SetFontObject(GameTooltipTextSmall)
+
+	frame.against = frame:CreateFontString(nil, "ARTWORK")
+	frame.against:SetWidth(160)
+	frame.against:SetPoint("LEFT", frame.date, "RIGHT", 4, 0)
+	frame.against:SetFontObject(GameTooltipTextSmall)
+
+	frame.result = frame:CreateFontString(nil, "ARTWORK")
+	frame.result:SetWidth(100)
+	frame.result:SetPoint("LEFT", frame.against, "RIGHT", 4, 0)
+	frame.result:SetFontObject(GameTooltipTextSmall)
+	
+	if math.fmod(i, 2) == 0 then
+		frame.bg = frame:CreateTexture(nil, "BACKGROUND")
+		frame.bg:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+		frame.bg:SetBlendMode("ADD")
+		frame.bg:SetAllPoints(frame)
+		frame.bg:SetVertexColor(0.3, 0.3, 0.3)
+	end
+
+	viewFrame["row"..i] = frame
+end
+
+viewFrame:SetScript("OnShow", ArenaRecaps_ScrollMatches)
 table.insert(UISpecialFrames, "ArenaRecapsWindow")
+
+function ArenaRecaps_ScrollMatches()
+	local function format_row(row, num)
+		row.match:SetText(nil)
+		row.date:SetText(nil)
+		row.against:SetText(nil)
+		row.result:SetText(nil)
+		row.star:SetChecked(nil)
+		
+		if RECAPS_MATCHES[num] then
+			local tbl = RECAPS_MATCHES[num]
+			row.matchID = num
+			row.match:SetFormattedText("[%d]", num)
+			row.date:SetText(date("%c", tbl.arenaStop))
+			row.against:SetText(tbl.green.team)
+			row.result:SetText(tbl.green.honorGained)
+			if tbl.green.honorGained >= 0 then
+				row.result:SetTextColor(0, 1, 0)
+			else
+				row.result:SetTextColor(1, 0, 0)
+			end
+			row.star:SetChecked(tbl.starred)
+		end
+	end
+
+	local frame = ArenaRecapsWindowScroll
+	FauxScrollFrame_Update(frame, #RECAPS_MATCHES, 15, 16)
+	for line = 1, 15 do
+		local offset = line + FauxScrollFrame_GetOffset(frame)
+		local row = viewFrame["row"..line]
+		if offset <= #RECAPS_MATCHES then
+			format_row(row, offset)
+			row:Show()
+		else
+			row:Hide()
+		end
+	end
+end
 
 --* Create the minimap menu icon
 local menuIcon = CreateFrame("Button", "RecapsMinimap", Minimap)
