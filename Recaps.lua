@@ -1,5 +1,5 @@
 --* Recaps WoW AddOn
-RECAPS_SAVED = RECAPS_SAVED or {}
+RECAPS_MATCHES = RECAPS_MATCHES or {}
 
 --* Local variables
 local arenastart, logging, recorded
@@ -47,7 +47,7 @@ local function saveArena(mapName, teamSize)
 		end
 	end
 	
-	table.insert(RECAPS_SAVED, {
+	table.insert(RECAPS_MATCHES, {
 		map_name = mapName,
 		arenaStop = time(),
 		arenaStart = arenastart,
@@ -106,3 +106,104 @@ eventsFrame:SetScript("OnUpdate",
 			end
 		end
 	end)
+
+--* Matches comment and starring frame
+local viewFrame = CreateFrame("Frame", nil, UIParent)
+viewFrame:SetWidth(400)
+viewFrame:SetHeight(300)
+viewFrame:SetBackdrop({	bgFile = "Interface/Tooltips/UI-Tooltip-Background", 
+						edgeFile = "Interface/Tooltips/UI-Tooltip-Border", 
+						tile = true, tileSize = 16, edgeSize = 16, 
+						insets = { left = 4, right = 4, top = 4, bottom = 4 }})
+viewFrame:SetBackdropColor(0,0,0,1)
+viewFrame:Hide()
+viewFrame:SetPoint("CENTER")
+
+viewFrame.icon = viewFrame:CreateTexture(nil, "ARTWORK")
+viewFrame.icon:SetTexture("Interface\\AddOns\\Recaps\\icon")
+viewFrame.icon:SetWidth(24)
+viewFrame.icon:SetHeight(24)
+viewFrame.icon:SetPoint("TOPLEFT", 3, -3)
+
+viewFrame.title = viewFrame:CreateFontString(nil, "ARTWORK")
+viewFrame.title:SetWidth(300)
+viewFrame.title:SetPoint("TOPRIGHT", -4, -6)
+viewFrame.title:SetFontObject(GameTooltipText)
+viewFrame.title:SetText("Arena Recaps Recent Matches")
+
+viewFrame.titleBG = viewFrame:CreateTexture(nil, "BACKGROUND")
+viewFrame.titleBG:SetTexture(29/255, 189/255, 229/255, 0.5)
+viewFrame.titleBG:SetWidth(376)
+viewFrame.titleBG:SetHeight(22)
+viewFrame.titleBG:SetPoint("TOPRIGHT", -3, -3)
+
+--* Create the minimap menu icon
+local menuIcon = CreateFrame("Button", "RecapsMinimap", Minimap)
+menuIcon:SetWidth(33)
+menuIcon:SetHeight(33)
+menuIcon:SetFrameStrata("LOW")
+menuIcon:SetMovable(true)
+menuIcon:RegisterForClicks("AnyUp")
+menuIcon:RegisterForDrag("LeftButton")
+menuIcon:SetPoint("CENTER", -12, -80)
+
+menuIcon.icon = menuIcon:CreateTexture(nil, "BACKGROUND")
+menuIcon.icon:SetTexture("Interface\\AddOns\\Recaps\\icon")
+menuIcon.icon:SetWidth(22)
+menuIcon.icon:SetHeight(22)
+menuIcon.icon:SetPoint("CENTER", -1, 3)
+
+menuIcon.border = menuIcon:CreateTexture(nil, "ARTWORK")
+menuIcon.border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+menuIcon.border:SetWidth(52)
+menuIcon.border:SetHeight(52)
+menuIcon.border:SetPoint("TOPLEFT")
+
+local function onupdate(self)
+	if self.isMoving then
+		local xpos, ypos = GetCursorPosition()
+		local xmin, ymin = Minimap:GetLeft(), Minimap:GetBottom()
+
+		xpos = xmin - xpos/Minimap:GetEffectiveScale() + 70
+		ypos = ypos / Minimap:GetEffectiveScale() - ymin - 70
+		local angle = math.deg(math.atan2(ypos, xpos))
+		xpos = 80 * cos(angle)
+		ypos = 80 * sin(angle)
+		self:ClearAllPoints()
+		self:SetPoint("TOPLEFT", "Minimap", "TOPLEFT", 52-xpos, ypos-52)
+	end
+end
+
+menuIcon:SetScript("OnClick",
+	function(self)
+		if viewFrame:IsShown() then
+			viewFrame:Hide()
+		else
+			viewFrame:Show()
+		end
+	end)
+
+menuIcon:SetScript("OnDragStart",
+	function(self)
+		if IsShiftKeyDown() then
+			self.isMoving = true
+			self:SetScript("OnUpdate", function(self) onupdate(self) end)
+		end
+	end)
+
+menuIcon:SetScript("OnDragStop",
+	function(self)
+		self.isMoving = nil
+		self:SetScript("OnUpdate", nil)
+		self:SetUserPlaced(true)
+	end)
+menuIcon:SetScript("OnEnter",
+	function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+		GameTooltip:AddLine("Arena Recaps", 0, 0.75, 1)
+		GameTooltip:AddLine("Shift + Drag - Move Button", 0.75, 0.75, 0.75)
+		GameTooltip:AddLine("Click - Toggle Recent Matches", 0.75, 0.75, 0.75)
+		GameTooltip:Show()
+	end)
+
+menuIcon:SetScript("OnLeave", function() GameTooltip:Hide() end)
