@@ -48,7 +48,8 @@ local function saveArena(mapName, teamSize)
 				classToken = classToken,
 				damageDone = damageDone,
 				healingDone = healingDone,
-				teamRating = teamRating
+				teamRating = teamRating,
+				newTeamRating = newTeamRating
 			}
 			
 			if faction == 0 then
