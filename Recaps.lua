@@ -42,7 +42,7 @@ local function saveArena(mapName, teamSize)
 	local numScores = GetNumBattlefieldScores()
 	for i = 1, numScores do
 		local server = GetRealmName()
-		local name, killingBlows, _, _, _, faction, _, race, _, classToken, damageDone, healingDone = GetBattlefieldScore(i)
+		local name, killingBlows, _, _, _, faction, _, race, class, classToken, damageDone, healingDone = GetBattlefieldScore(i)
 		if faction then
 			if string.find(name, "%-") then
 				name, server = string.split("-", name)
@@ -52,6 +52,7 @@ local function saveArena(mapName, teamSize)
 				name = name,
 				killingBlows = killingBlows,
 				race = race,
+				class = class,
 				classToken = classToken,
 				damageDone = damageDone,
 				healingDone = healingDone,
