@@ -5,6 +5,6 @@
 ## Author: Tivoli http://www.nurfed.com
 ## X-Website: http://www.arenarecaps.net
 ## X-email: tivoli@nurfed.com
-## X-Revision: 02/28/2009
+## X-Revision: 1.0
 
 Recaps.lua

@@ -7,6 +7,7 @@ RECAPS_MATCHES = RECAPS_MATCHES or {}
 
 --* Local variables
 local arenastart, logging, recorded
+local version = GetAddOnMetadata("Recaps", "X-Revision")
 
 --* Prints out messages to the default chat frame
 local function print(msg)
@@ -79,7 +80,8 @@ local function saveArena(mapName, teamSize)
 		arenaStop = time(),
 		arenaStart = arenastart,
 		green = green,
-		gold = gold
+		gold = gold,
+		version = version
 	})
 	LoggingCombat(0);
 end
