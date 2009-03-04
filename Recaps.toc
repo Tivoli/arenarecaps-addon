@@ -1,7 +1,7 @@
 ## Interface: 30000
 ## Title: Recaps
 ## Notes: Collects arena match history.
-## SavedVariablesPerCharacter: RECAPS_MATCHES
+## SavedVariables: RECAPS_MATCHES
 ## Author: Tivoli http://www.nurfed.com
 ## X-Website: http://www.arenarecaps.net
 ## X-email: tivoli@nurfed.com
