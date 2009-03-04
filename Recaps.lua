@@ -4,10 +4,25 @@
 
 --* Global variables
 RECAPS_MATCHES = RECAPS_MATCHES or {}
+RECAPS_SUBSCRIBE = RECAPS_SUBSCRIBE or {}
 
 --* Local variables
 local arenastart, logging, recorded
 local version = GetAddOnMetadata("Recaps", "X-Revision")
+
+--* Class icons
+local classIcon = {
+	["WARRIOR"]		= {0, 0.25, 0, 0.25},
+	["MAGE"]		= {0.25, 0.49609375, 0, 0.25},
+	["ROGUE"]		= {0.49609375, 0.7421875, 0, 0.25},
+	["DRUID"]		= {0.7421875, 0.98828125, 0, 0.25},
+	["HUNTER"]		= {0, 0.25, 0.25, 0.5},
+	["SHAMAN"]	 	= {0.25, 0.49609375, 0.25, 0.5},
+	["PRIEST"]		= {0.49609375, 0.7421875, 0.25, 0.5},
+	["WARLOCK"]		= {0.7421875, 0.98828125, 0.25, 0.5},
+	["PALADIN"]		= {0, 0.25, 0.5, 0.75},
+	["DEATHKNIGHT"]	= {0.25, .5, 0.5, .75},
+}
 
 --* Prints out messages to the default chat frame
 local function print(msg)
@@ -87,6 +102,62 @@ local function saveArena(mapName, teamSize)
 	LoggingCombat(0);
 end
 
+--* Display the review frame
+local function toggleReview(id)
+	if RecapsReview:IsShown() and RecapsReview.matchID == id then
+		RecapsReview:Hide()
+		RecapsReview.matchID = nil
+	else
+		RecapsReview:Show()
+		RecapsReview.matchID = id
+		local tbl = RECAPS_MATCHES[id]
+		for i = 1, 5 do
+			local greenRow = RecapsReview["green"..i]
+			local goldRow = RecapsReview["gold"..i]
+			local greenMember = tbl.green.members[i]
+			local goldMember = tbl.gold.members[i]
+			if i <= tbl.teamSize then
+				greenRow:Show()
+				greenRow.class:SetTexCoord(unpack(classIcon[greenMember.classToken]))
+				greenRow.name:SetText(greenMember.name)
+				greenRow.kb:SetText(greenMember.killingBlows)
+				greenRow.damage:SetText(greenMember.damageDone)
+				greenRow.healing:SetText(greenMember.healingDone)
+
+				goldRow:Show()
+				goldRow.class:SetTexCoord(unpack(classIcon[goldMember.classToken]))
+				goldRow.name:SetText(goldMember.name)
+				goldRow.kb:SetText(goldMember.killingBlows)
+				goldRow.damage:SetText(goldMember.damageDone)
+				goldRow.healing:SetText(goldMember.healingDone)
+			else
+				greenRow:Hide()
+				goldRow:Hide()
+			end
+		end
+
+		RecapsReview.greenTeam:SetText(tbl.green.team)
+		RecapsReview.greenResult:SetFormattedText("%d (%d)", tbl.green.newTeamRating, tbl.green.honorGained)
+		if tbl.green.honorGained < 0 then
+			RecapsReview.greenResult:SetTextColor(1, 0, 0)
+		else
+			RecapsReview.greenResult:SetTextColor(0, 1, 0)
+		end
+
+		RecapsReview.goldTeam:SetText(tbl.gold.team)
+		RecapsReview.goldResult:SetFormattedText("%d (%d)", tbl.gold.newTeamRating, tbl.gold.honorGained)
+		if tbl.gold.honorGained < 0 then
+			RecapsReview.goldResult:SetTextColor(1, 0, 0)
+		else
+			RecapsReview.goldResult:SetTextColor(0, 1, 0)
+		end
+
+		RecapsReview.goldTeam:ClearAllPoints()
+		RecapsReview.goldTeam:SetPoint("TOPLEFT", RecapsReview["green"..tbl.teamSize], "BOTTOMLEFT", 0, -8)
+		RecapsReview:SetHeight((16 * tbl.teamSize + 18) * 2)
+	end
+end
+
 local events = {
 	--* Check for arena ending
 	["UPDATE_BATTLEFIELD_STATUS"] = function()
@@ -139,7 +210,7 @@ eventsFrame:SetScript("OnUpdate",
 	end)
 
 --* Matches comment and starring frame
-local viewFrame = CreateFrame("Frame", "ArenaRecapsWindow", UIParent)
+local viewFrame = CreateFrame("Frame", "RecapsWindow", UIParent)
 viewFrame:SetWidth(400)
 viewFrame:SetHeight(285)
 viewFrame:SetBackdrop({	bgFile = "Interface/Tooltips/UI-Tooltip-Background", 
@@ -153,8 +224,6 @@ viewFrame:RegisterForDrag("LeftButton")
 viewFrame:SetClampedToScreen(true)
 viewFrame:SetMovable(true)
 viewFrame:EnableMouse(true)
-viewFrame:SetScript("OnDragStart", function(self) self:StartMoving() end)
-viewFrame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
 
 viewFrame.icon = viewFrame:CreateTexture(nil, "ARTWORK")
 viewFrame.icon:SetTexture("Interface\\AddOns\\Recaps\\icon")
@@ -189,7 +258,7 @@ viewFrame.titleBG:SetHeight(23)
 viewFrame.titleBG:SetPoint("TOPRIGHT", -3, -3)
 
 viewFrame.matchID = viewFrame:CreateFontString(nil, "ARTWORK")
-viewFrame.matchID:SetWidth(40)
+viewFrame.matchID:SetWidth(50)
 viewFrame.matchID:SetPoint("TOPLEFT", 5, -30)
 viewFrame.matchID:SetFontObject(GameTooltipTextSmall)
 viewFrame.matchID:SetTextColor(29/255, 189/255, 229/255)
@@ -199,11 +268,11 @@ viewFrame.star = viewFrame:CreateTexture(nil, "BACKGROUND")
 viewFrame.star:SetTexture("Interface\\AddOns\\Recaps\\starred")
 viewFrame.star:SetWidth(14)
 viewFrame.star:SetHeight(14)
-viewFrame.star:SetPoint("LEFT", viewFrame.matchID, "RIGHT", 3, 0)
+viewFrame.star:SetPoint("LEFT", viewFrame.matchID, "RIGHT", 0, 0)
 
 viewFrame.headerDate = viewFrame:CreateFontString(nil, "ARTWORK")
 viewFrame.headerDate:SetWidth(110)
-viewFrame.headerDate:SetPoint("LEFT", viewFrame.star, "RIGHT", 9, 0)
+viewFrame.headerDate:SetPoint("LEFT", viewFrame.star, "RIGHT", 12, 0)
 viewFrame.headerDate:SetFontObject(GameTooltipTextSmall)
 viewFrame.headerDate:SetTextColor(29/255, 189/255, 229/255)
 viewFrame.headerDate:SetText("Date")
@@ -222,19 +291,19 @@ viewFrame.headerResult:SetFontObject(GameTooltipTextSmall)
 viewFrame.headerResult:SetTextColor(29/255, 189/255, 229/255)
 viewFrame.headerResult:SetText("Result")
 
-viewFrame.scroll = CreateFrame("ScrollFrame", "ArenaRecapsWindowScroll", viewFrame, "FauxScrollFrameTemplate")
+viewFrame.scroll = CreateFrame("ScrollFrame", "RecapsWindowScroll", viewFrame, "FauxScrollFrameTemplate")
 viewFrame.scroll:SetPoint("BOTTOMRIGHT", -25, 4)
 viewFrame.scroll:SetWidth(370)
 viewFrame.scroll:SetHeight(235)
 
 viewFrame.scroll:SetScript("OnVerticalScroll",
 	function(self, val)
-		FauxScrollFrame_OnVerticalScroll(self, val, 14, ArenaRecaps_ScrollMatches)
+		FauxScrollFrame_OnVerticalScroll(self, val, 14, Recaps_ScrollMatches)
 	end)
 
 viewFrame.scroll:SetScript("OnShow",
 	function(self)
-		ArenaRecaps_ScrollMatches()
+		Recaps_ScrollMatches()
 	end)
 
 viewFrame.scroll:SetScript("OnMouseWheel",
@@ -253,14 +322,26 @@ for i = 1, 15 do
 	end
 
 	frame.match = frame:CreateFontString(nil, "ARTWORK")
-	frame.match:SetWidth(40)
+	frame.match:SetWidth(25)
 	frame.match:SetPoint("LEFT")
 	frame.match:SetFontObject(GameTooltipTextSmall)
+
+	frame.view = CreateFrame("Button", nil, frame)
+	frame.view:SetWidth(14)
+	frame.view:SetHeight(14)
+	frame.view:SetPoint("LEFT", frame.match, "RIGHT", 4, 0)
+	frame.view:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-UP")
+	frame.view:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-DOWN")
+	frame.view:SetScript("OnClick",
+		function(self)
+			local matchID = self:GetParent().matchID
+			toggleReview(matchID)
+		end)
 
 	frame.star = CreateFrame("CheckButton", nil, frame)
 	frame.star:SetWidth(14)
 	frame.star:SetHeight(14)
-	frame.star:SetPoint("LEFT", frame.match, "RIGHT", 4, 0)
+	frame.star:SetPoint("LEFT", frame.view, "RIGHT", 9, 0)
 	frame.star:SetCheckedTexture("Interface\\AddOns\\Recaps\\starred")
 	frame.star:SetDisabledCheckedTexture("Interface\\AddOns\\Recaps\\unstarred")
 
@@ -298,10 +379,26 @@ end
 
 viewFrame:SetScript("OnShow",
 	function(self)
-		ArenaRecaps_ScrollMatches()
+		Recaps_ScrollMatches()
 	end)
 
-table.insert(UISpecialFrames, "ArenaRecapsWindow")
+viewFrame:SetScript("OnHide",
+	function(self)
+		RecapsReview:Hide()
+		RecapsReview.matchID = nil
+	end)
+
+viewFrame:SetScript("OnDragStart",
+	function(self)
+		self:StartMoving()
+	end)
+
+viewFrame:SetScript("OnDragStop",
+	function(self)
+		self:StopMovingOrSizing()
+	end)
+
+table.insert(UISpecialFrames, "RecapsWindow")
 
 local function getTeams(tbl)
 	local name = UnitName("player")
@@ -314,7 +411,7 @@ local function getTeams(tbl)
 	return tbl.green, tbl.gold
 end
 
-function ArenaRecaps_ScrollMatches()
+function Recaps_ScrollMatches()
 	local function format_row(row, num)
 		row.match:SetText(nil)
 		row.date:SetText(nil)
@@ -339,7 +436,7 @@ function ArenaRecaps_ScrollMatches()
 		end
 	end
 
-	local frame = ArenaRecapsWindowScroll
+	local frame = RecapsWindowScroll
 	FauxScrollFrame_Update(frame, #RECAPS_MATCHES, 15, 16)
 	for line = 1, 15 do
 		local offset = line + FauxScrollFrame_GetOffset(frame)
@@ -352,6 +449,98 @@ function ArenaRecaps_ScrollMatches()
 		end
 	end
 end
+
+--* Create the match review frame
+local reviewFrame = CreateFrame("Frame", "RecapsReview", RecapsWindow)
+reviewFrame:SetWidth(300)
+reviewFrame:SetHeight(200)
+reviewFrame:SetBackdrop({bgFile = "Interface/Buttons/WHITE8X8", 
+						edgeFile = "Interface/Tooltips/UI-Tooltip-Border", 
+						tile = true, tileSize = 16, edgeSize = 16, 
+						insets = { left = 4, right = 4, top = 4, bottom = 4 }})
+reviewFrame:SetBackdropColor(0,0,0,1)
+reviewFrame:Hide()
+reviewFrame:SetPoint("TOP", 0, -45)
+reviewFrame:SetFrameStrata("HIGH")
+
+reviewFrame.greenTeam = reviewFrame:CreateFontString(nil, "ARTWORK")
+reviewFrame.greenTeam:SetWidth(230)
+reviewFrame.greenTeam:SetPoint("TOPLEFT", 5, -5)
+reviewFrame.greenTeam:SetFontObject(GameTooltipTextSmall)
+reviewFrame.greenTeam:SetTextColor(0, 1, 0)
+
+reviewFrame.greenResult = reviewFrame:CreateFontString(nil, "ARTWORK")
+reviewFrame.greenResult:SetWidth(60)
+reviewFrame.greenResult:SetPoint("LEFT", reviewFrame.greenTeam, "RIGHT", 0, 0)
+reviewFrame.greenResult:SetFontObject(GameTooltipTextSmall)
+reviewFrame.greenResult:SetJustifyH("RIGHT")
+
+reviewFrame.goldTeam = reviewFrame:CreateFontString(nil, "ARTWORK")
+reviewFrame.goldTeam:SetWidth(230)
+reviewFrame.goldTeam:SetPoint("TOPLEFT", reviewFrame.greenTeam, "BOTTOMLEFT", 0, -5)
+reviewFrame.goldTeam:SetFontObject(GameTooltipTextSmall)
+reviewFrame.goldTeam:SetTextColor(1, 1, 0)
+
+reviewFrame.goldResult = reviewFrame:CreateFontString(nil, "ARTWORK")
+reviewFrame.goldResult:SetWidth(60)
+reviewFrame.goldResult:SetPoint("LEFT", reviewFrame.goldTeam, "RIGHT", 0, 0)
+reviewFrame.goldResult:SetFontObject(GameTooltipTextSmall)
+reviewFrame.goldResult:SetJustifyH("RIGHT")
+
+local function createRows(team)
+	for i = 1, 5 do
+		local frame = CreateFrame("Button", nil, reviewFrame)
+		frame:SetWidth(290)
+		frame:SetHeight(16)
+		if i == 1 then
+			frame:SetPoint("TOPLEFT", reviewFrame[team.."Team"], "BOTTOMLEFT", 0, 0)
+		else
+			frame:SetPoint("TOPLEFT", reviewFrame[team..i-1], "BOTTOMLEFT", 0, 0)
+		end
+
+		frame.class = frame:CreateTexture(nil, "BACKGROUND")
+		frame.class:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes")
+		frame.class:SetWidth(14)
+		frame.class:SetHeight(14)
+		frame.class:SetPoint("LEFT")
+	
+		frame.name = frame:CreateFontString(nil, "ARTWORK")
+		frame.name:SetWidth(90)
+		frame.name:SetPoint("LEFT", frame.class, "RIGHT", 5, 0)
+		frame.name:SetFontObject(GameTooltipTextSmall)
+	
+		frame.kb = frame:CreateFontString(nil, "ARTWORK")
+		frame.kb:SetWidth(20)
+		frame.kb:SetPoint("LEFT", frame.name, "RIGHT", 5, 0)
+		frame.kb:SetFontObject(GameTooltipTextSmall)
+		frame.kb:SetTextColor(1, 0.5, 0)
+	
+		frame.damage = frame:CreateFontString(nil, "ARTWORK")
+		frame.damage:SetWidth(90)
+		frame.damage:SetPoint("LEFT", frame.kb, "RIGHT", 5, 0)
+		frame.damage:SetFontObject(GameTooltipTextSmall)
+		frame.damage:SetTextColor(1, 0, 0.25)
+	
+		frame.healing = frame:CreateFontString(nil, "ARTWORK")
+		frame.healing:SetWidth(90)
+		frame.healing:SetPoint("LEFT", frame.damage, "RIGHT", 5, 0)
+		frame.healing:SetFontObject(GameTooltipTextSmall)
+		frame.healing:SetTextColor(0, 0.5, 1)
+	
+		frame.bg = frame:CreateTexture(nil, "BACKGROUND")
+		frame.bg:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+		frame.bg:SetBlendMode("ADD")
+		frame.bg:SetAllPoints(frame)
+		if team == "green" then
+			frame.bg:SetVertexColor(0, 1, 0)
+		end
+	
+		reviewFrame[team..i] = frame
+	end
+end
+
+createRows("green")
+createRows("gold")
 
 --* Create the minimap menu icon
 local menuIcon = CreateFrame("Button", "RecapsMinimap", Minimap)
