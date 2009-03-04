@@ -74,7 +74,7 @@ local function saveArena(mapName, teamSize)
 		end
 	end
 	
-	table.insert(RECAPS_MATCHES, {
+	table.insert(RECAPS_MATCHES, 1, {
 		teamSize = teamSize,
 		timeZone = timezone(),
 		mapName = mapName,
@@ -270,8 +270,23 @@ for i = 1, 15 do
 	viewFrame["row"..i] = frame
 end
 
-viewFrame:SetScript("OnShow", ArenaRecaps_ScrollMatches)
+viewFrame:SetScript("OnShow",
+	function(self)
+		ArenaRecaps_ScrollMatches()
+	end)
+
 table.insert(UISpecialFrames, "ArenaRecapsWindow")
+
+local function getTeams(tbl)
+	local name = UnitName("player")
+	local server = GetRealmName()
+	for _, val in ipairs(tbl.gold.members) do
+		if val.name == name and tbl.gold.server == server then
+			return tbl.gold, tbl.green
+		end
+	end
+	return tbl.green, tbl.gold
+end
 
 function ArenaRecaps_ScrollMatches()
 	local function format_row(row, num)
@@ -286,9 +301,10 @@ function ArenaRecaps_ScrollMatches()
 			row.matchID = num
 			row.match:SetFormattedText("[%d]", num)
 			row.date:SetText(date("%c", tbl.arenaStop))
-			row.against:SetText(tbl.green.team)
-			row.result:SetText(tbl.green.honorGained)
-			if tbl.green.honorGained >= 0 then
+			local home, against = getTeams(tbl)
+			row.against:SetText(against.team)
+			row.result:SetText(home.honorGained)
+			if home.honorGained >= 0 then
 				row.result:SetTextColor(0, 1, 0)
 			else
 				row.result:SetTextColor(1, 0, 0)
