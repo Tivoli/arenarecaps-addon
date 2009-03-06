@@ -31,13 +31,13 @@ end
 
 --* Get the timezone offset
 local function timezone()
-  local now = time()
-  local timezone = difftime(now, time(date("!*t", now)))
-  local h, m = math.modf(timezone / 3600)
-  local zoneText = date("%z")
-  zoneText = string.gsub(zoneText, "%s", "")
-  zoneText = string.gsub(zoneText, "%l", "")
-  return string.format("%s %+.4d",zoneText, 100 * h + 60 * m)
+	local now = time()
+	local timezone = difftime(now, time(date("!*t", now)))
+	local h, m = math.modf(timezone / 3600)
+	local zoneText = date("%z")
+	zoneText = string.gsub(zoneText, "%s", "")
+	zoneText = string.gsub(zoneText, "%l", "")
+	return string.format("%s %+.4d",zoneText, 100 * h + 60 * m)
 end
 
 --* Saves the arena match data
