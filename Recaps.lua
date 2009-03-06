@@ -264,7 +264,7 @@ viewFrame.matchID:SetFontObject(GameTooltipTextSmall)
 viewFrame.matchID:SetTextColor(29/255, 189/255, 229/255)
 viewFrame.matchID:SetText("ID")
 
-viewFrame.star = viewFrame:CreateTexture(nil, "BACKGROUND")
+viewFrame.star = viewFrame:CreateTexture(nil, "ARTWORK")
 viewFrame.star:SetTexture("Interface\\AddOns\\Recaps\\starred")
 viewFrame.star:SetWidth(14)
 viewFrame.star:SetHeight(14)
