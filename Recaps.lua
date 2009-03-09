@@ -31,9 +31,13 @@ end
 
 --* Get the timezone offset
 local function timezone()
-	local now = time()
-	local timezone = difftime(now, time(date("!*t", now)))
-	local h, m = math.modf(timezone / 3600)
+	local t_secs = time(date("*t"))
+	t = date("*t", t_secs)
+	local t_UTC = date("!*t", t_secs)
+	t_UTC.isdst = t.isdst
+	local UTC_secs = time(t_UTC)
+	local offset = difftime(t_secs, UTC_secs)
+	local h, m = math.modf(offset / 3600)
 	local zoneText = date("%z")
 	zoneText = string.gsub(zoneText, "%s", "")
 	zoneText = string.gsub(zoneText, "%l", "")
@@ -43,7 +47,6 @@ end
 --* Saves the arena match data
 local function saveArena(mapName, teamSize)
 	local team0, team1 = GetBattlefieldTeamInfo(0), GetBattlefieldTeamInfo(1)
-	--local matchData = {}
 	local green = {
 		team = team0,
 		members = {}
